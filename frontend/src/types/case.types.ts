@@ -298,3 +298,48 @@ export interface CalendarHearingsResponse {
   count: number;
   data: CalendarHearing[];
 }
+
+// Case Team Member Types
+export interface CaseTeamMember {
+  id: string; // UUID from backend
+  caseId: number;
+  userId: number;
+  joinedAt: string;
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  };
+}
+
+export interface GetCaseTeamMembersResponse {
+  success: boolean;
+  data: CaseTeamMember[];
+}
+
+export interface AddCaseTeamMemberRequest {
+  userId: number;
+}
+
+export interface AddCaseTeamMemberResponse {
+  success: boolean;
+  data: CaseTeamMember;
+}
+
+export interface RemoveCaseTeamMemberResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface GetCasesByOrgMemberResponse {
+  success: boolean;
+  data: Case[];
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}

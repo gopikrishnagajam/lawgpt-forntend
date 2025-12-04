@@ -1,44 +1,87 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { caseService } from '@/services/case.service';
+import { useAuthStore } from '@/store/auth.store';
 import { CaseFormModal } from '@/components/CaseFormModal';
+import { CaseTeamModal } from '@/components/CaseTeamModal';
 import { DocumentUpload } from '@/components/DocumentUpload';
-import type { Case, CaseDocument } from '@/types/case.types';
+import type { Case, CaseDocument, CaseTeamMember } from '@/types/case.types';
 
 export const CaseDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { sessionContext } = useAuthStore();
   
   console.log('🔍 CaseDetailPage loaded with ID:', id);
   
   const [caseData, setCaseData] = useState<Case | null>(null);
+  const [teamMembers, setTeamMembers] = useState<CaseTeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Check if user is admin
+  const isAdmin = sessionContext?.roles?.includes('ADMIN') || sessionContext?.roles?.includes('admin');
 
   const fetchCase = async () => {
     if (!id) return;
 
     console.log('📡 Fetching case data for ID:', id);
+    console.log('🔐 Access token:', localStorage.getItem('accessToken')?.substring(0, 20) + '...');
     try {
       setLoading(true);
       setError(null);
       const response = await caseService.getCaseById(parseInt(id), true);
+      console.log('✅ Case fetched successfully:', response.data);
       setCaseData(response.data);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Failed to fetch case details');
-      console.error('Error fetching case:', err);
+      const error = err as { 
+        response?: { 
+          status?: number;
+          statusText?: string;
+          data?: { message?: string; error?: string } 
+        };
+        message?: string;
+      };
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message ||
+                          'Failed to fetch case details';
+      console.error('❌ Error fetching case:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: errorMessage,
+        fullError: err
+      });
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchTeamMembers = async () => {
+    if (!id) return;
+
+    try {
+      const response = await caseService.getCaseTeamMembers(parseInt(id));
+      setTeamMembers(response.data);
+    } catch (err: unknown) {
+      console.error('Error fetching team members:', err);
+    }
+  };
+
   useEffect(() => {
+    console.log('🔍 Component mounted/updated');
+    console.log('📝 Case ID from URL:', id);
+    console.log('🔐 Auth context:', sessionContext);
+    console.log('🔑 Token in localStorage:', !!localStorage.getItem('accessToken'));
+    
     fetchCase();
+    fetchTeamMembers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -459,6 +502,44 @@ export const CaseDetailPage = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Team Members */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowTeamModal(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  + Manage
+                </button>
+              )}
+            </div>
+            {teamMembers.length > 0 ? (
+              <div className="space-y-3">
+                {teamMembers.map((member) => (
+                  <div
+                    key={member.userId}
+                    className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    <p className="font-medium text-sm text-gray-900">
+                      {member.user.firstName} {member.user.lastName}
+                    </p>
+                    <p className="text-xs text-gray-600">{member.user.email}</p>
+                    {member.user.phone && (
+                      <p className="text-xs text-gray-600">{member.user.phone}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      Assigned: {new Date(member.joinedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">No team members assigned yet</p>
+            )}
+          </div>
+
           {/* Tags */}
           {caseData.tags && caseData.tags.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
@@ -558,6 +639,16 @@ export const CaseDetailPage = () => {
           caseId={caseData.id}
           onSuccess={fetchCase}
           onClose={() => setShowUploadModal(false)}
+        />
+      )}
+
+      {/* Team Management Modal */}
+      {showTeamModal && caseData && (
+        <CaseTeamModal
+          isOpen={showTeamModal}
+          onClose={() => setShowTeamModal(false)}
+          caseId={caseData.id}
+          onSuccess={fetchTeamMembers}
         />
       )}
 

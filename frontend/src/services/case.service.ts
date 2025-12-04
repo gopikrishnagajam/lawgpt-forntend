@@ -8,6 +8,11 @@ import type {
   UpdateCaseRequest,
   UpcomingHearingsResponse,
   DocumentUploadRequest,
+  GetCaseTeamMembersResponse,
+  AddCaseTeamMemberRequest,
+  AddCaseTeamMemberResponse,
+  RemoveCaseTeamMemberResponse,
+  GetCasesByOrgMemberResponse,
 } from '@/types/case.types';
 import type { ApiResponse } from '@/types/api.types';
 
@@ -168,6 +173,60 @@ export const caseService = {
       '/cases/hearings/calendar',
       {
         params: { startDate, endDate },
+      }
+    );
+    return data;
+  },
+
+  /**
+   * Get team members assigned to a case
+   */
+  getCaseTeamMembers: async (caseId: number): Promise<GetCaseTeamMembersResponse> => {
+    const { data } = await api.get<GetCaseTeamMembersResponse>(
+      `/cases/${caseId}/team/members`
+    );
+    return data;
+  },
+
+  /**
+   * Add a member to a case team
+   */
+  addCaseTeamMember: async (
+    caseId: number,
+    request: AddCaseTeamMemberRequest
+  ): Promise<AddCaseTeamMemberResponse> => {
+    const { data } = await api.post<AddCaseTeamMemberResponse>(
+      `/cases/${caseId}/team/members`,
+      request
+    );
+    return data;
+  },
+
+  /**
+   * Remove a member from a case team
+   */
+  removeCaseTeamMember: async (
+    caseId: number,
+    memberId: number
+  ): Promise<RemoveCaseTeamMemberResponse> => {
+    const { data } = await api.delete<RemoveCaseTeamMemberResponse>(
+      `/cases/${caseId}/team/members/${memberId}`
+    );
+    return data;
+  },
+
+  /**
+   * Get cases assigned to an organization member
+   */
+  getCasesByOrgMember: async (
+    organizationId: number,
+    memberId: number,
+    filters?: CaseFilters
+  ): Promise<GetCasesByOrgMemberResponse> => {
+    const { data } = await api.get<GetCasesByOrgMemberResponse>(
+      `/cases/admin/member/${memberId}`,
+      {
+        params: { ...filters, organizationId },
       }
     );
     return data;

@@ -49,10 +49,8 @@ export const LoginPage = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white text-2xl font-bold">L</span>
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">LawGBT</h1>
+            <img src="/src/assets/legalnest.png" alt="LegalNest" className="w-12 h-12 object-contain" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">LegalNest</h1>
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
           <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>

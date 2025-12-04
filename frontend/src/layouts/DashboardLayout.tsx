@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
-import { LogOut, Scale, User, FileText, Briefcase, Users, Shield, UserCircle } from 'lucide-react';
+import { LogOut, Scale, User, FileText, Briefcase, Users, Shield, UserCircle, Calendar, Clock } from 'lucide-react';
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -21,10 +21,8 @@ export const DashboardLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                <Scale className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">LawGBT</h1>
+              <img src="/src/assets/legalnest.png" alt="LegalNest" className="w-10 h-10 object-contain" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">LegalNest</h1>
             </div>
 
             <div className="flex items-center gap-4">
@@ -97,6 +95,20 @@ export const DashboardLayout = () => {
             >
               <FileText className="w-4 h-4" />
               Cases
+            </Link>
+            <Link
+              to="/hearings"
+              className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
+            >
+              <Clock className="w-4 h-4" />
+              Hearings
+            </Link>
+            <Link
+              to="/calendar"
+              className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
+            >
+              <Calendar className="w-4 h-4" />
+              Calendar
             </Link>
             {isAdmin && (
               <Link

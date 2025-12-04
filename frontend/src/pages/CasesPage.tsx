@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { caseService } from '@/services/case.service';
+import { useAuthStore } from '@/store/auth.store';
 import { CaseFormModal } from '@/components/CaseFormModal';
 import type { Case, CaseFilters, CaseType, CaseStatus, CasePriority } from '@/types/case.types';
 
 export const CasesPage = () => {
   const navigate = useNavigate();
+  const { sessionContext, user } = useAuthStore();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +18,9 @@ export const CasesPage = () => {
   const [caseTypeFilter, setCaseTypeFilter] = useState<CaseType | ''>('');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<CasePriority | ''>('');
+
+  // Check if user is admin
+  const isAdmin = sessionContext?.roles?.includes('ADMIN') || sessionContext?.roles?.includes('admin');
 
   const fetchCases = async () => {
     try {
@@ -30,7 +35,17 @@ export const CasesPage = () => {
         limit: 50,
       };
 
-      const response = await caseService.getCases(filters);
+      let response;
+      
+      // If admin, fetch all cases from all team members, otherwise fetch own cases
+      if (isAdmin && sessionContext?.organizationId) {
+        // For admin: fetch all cases in their organization
+        response = await caseService.getCases(filters);
+      } else {
+        // For members: fetch own cases only
+        response = await caseService.getCases(filters);
+      }
+      
       setCases(response.data);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -44,7 +59,7 @@ export const CasesPage = () => {
   useEffect(() => {
     fetchCases();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, caseTypeFilter, statusFilter, priorityFilter]);
+  }, [searchQuery, caseTypeFilter, statusFilter, priorityFilter, isAdmin]);
 
   const getPriorityColor = (priority: CasePriority) => {
     switch (priority) {
@@ -85,7 +100,14 @@ export const CasesPage = () => {
     <div>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Cases</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Cases</h2>
+          {isAdmin && (
+            <p className="text-sm text-gray-600 mt-1">
+              Viewing all team member cases
+            </p>
+          )}
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

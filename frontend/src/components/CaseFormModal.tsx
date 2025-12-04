@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, FileText, Building2, Users, Scale, Calendar, Info, Plus, Trash2 } from 'lucide-react';
 import { caseService } from '@/services/case.service';
 import { clientService } from '@/services/client.service';
+import { useAuthStore } from '@/store/auth.store';
 import type { 
   Case, 
   CaseType, 
@@ -23,6 +24,7 @@ interface CaseFormModalProps {
 type TabType = 'basic' | 'court' | 'parties' | 'details' | 'dates' | 'additional';
 
 export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFormModalProps) => {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -314,7 +316,19 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
       if (caseToEdit) {
         await caseService.updateCase(caseToEdit.id, caseData);
       } else {
-        await caseService.createCase(caseData);
+        // Create new case
+        const response = await caseService.createCase(caseData);
+        
+        // Auto-assign the creator to the case
+        if (response.data?.id && user) {
+          try {
+            const userId = parseInt(user.id);
+            await caseService.addCaseTeamMember(response.data.id, { userId });
+          } catch (assignErr) {
+            // Log the error but don't fail the case creation
+            console.error('Error auto-assigning creator to case:', assignErr);
+          }
+        }
       }
 
       onSuccess();

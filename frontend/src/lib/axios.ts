@@ -16,6 +16,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('accessToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log(`📤 [${config.method?.toUpperCase()}] ${config.url} - Auth token added`);
+    } else {
+      console.warn(`⚠️ [${config.method?.toUpperCase()}] ${config.url} - NO TOKEN FOUND`);
     }
     return config;
   },
@@ -26,8 +29,13 @@ api.interceptors.request.use(
 
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ [${response.config.method?.toUpperCase()}] ${response.config.url} - ${response.status}`);
+    return response;
+  },
   async (error: AxiosError) => {
+    console.error(`❌ [${error.config?.method?.toUpperCase()}] ${error.config?.url} - ${error.response?.status} ${error.message}`);
+    
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // If error is 401 and we haven't retried yet
