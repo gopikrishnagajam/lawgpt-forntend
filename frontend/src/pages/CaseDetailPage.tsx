@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/auth.store';
 import { CaseFormModal } from '@/components/CaseFormModal';
 import { CaseTeamModal } from '@/components/CaseTeamModal';
 import { DocumentUpload } from '@/components/DocumentUpload';
+import { NotesPanel } from '@/components/NotesPanel';
+import { NotesTimeline } from '@/components/NotesTimeline';
 import type { Case, CaseDocument, CaseTeamMember } from '@/types/case.types';
 
 export const CaseDetailPage = () => {
@@ -500,8 +502,16 @@ export const CaseDetailPage = () => {
           )}
         </div>
 
+        {/* Notes Timeline */}
+        <div className="lg:col-span-3">
+          <NotesTimeline caseId={caseData.id} />
+        </div>
+
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Today's Notes Panel */}
+          <NotesPanel caseId={caseData.id} />
+
           {/* Team Members */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">

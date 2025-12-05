@@ -14,12 +14,12 @@ Authorization: Bearer <token>
 
 ### Create Case
 - `POST /api/cases` - Create new case (user auto-assigned to it)
-- Body: `{ caseNumber, caseTitle, caseType, caseStatus, casePriority, courtName, judgeName, clientId, description }`
+- Body: `{ case_type, title, case_number, case_number_type, case_registration_date, case_year, sub_type, filing_date, court_info, party_info, case_details, important_dates, additional_info, current_status, disposed_on_date, final_order_summary, client_id }`
 
 ### Get Case
 - `GET /api/cases/:id` - Get case details (admin sees all org cases, members see only if assigned)
 
-### Update Case
+### Update Case 
 - `PUT /api/cases/:id` - Update case
 - Body: any case fields
 
@@ -32,8 +32,12 @@ Authorization: Bearer <token>
 
 ### Case Statistics
 - `GET /api/cases/stats/dashboard` - Dashboard statistics
-- `GET /api/cases/hearings/calendar` - Hearings calendar data
-- `GET /api/cases/hearings/upcoming` - Upcoming hearings
+
+### Hearings / Calendar
+- `GET /api/cases/hearings/calendar-month?month=YYYY-MM` - Get hearings for a month in calendar grid format (returns count and hearing summaries per day)
+- `GET /api/cases/hearings/day?date=YYYY-MM-DD` - Get detailed hearings for a specific date (day view)
+- `GET /api/cases/hearings/upcoming?days=N` - Get upcoming hearings for the next N days (optional `days`, default 7)
+- `GET /api/cases/hearings/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` - Get hearings between two dates (range)
 
 ## Case Team
 

@@ -1,65 +1,87 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { caseService } from '@/services/case.service';
 import type { CalendarHearing } from '@/types/case.types';
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, User, Phone, Briefcase } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
+import { caseService } from '@/services/case.service';
+import { NotesPanel } from '@/components/NotesPanel';
 
-export const CalendarPage = () => {
+export const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [hearings, setHearings] = useState<CalendarHearing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
+  const [allHearings, setAllHearings] = useState<CalendarHearing[]>([]);
+  const [loading, setLoading] = useState(false);
 
+  // Fetch all hearings from API on mount
   useEffect(() => {
-    fetchHearings();
-  }, [currentDate]);
+    const fetchAllHearings = async () => {
+      try {
+        setLoading(true);
+        const { data } = await caseService.getAllHearings(false, 100, 0);
 
-  const fetchHearings = async () => {
-    try {
-      setLoading(true);
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      
-      const startDate = new Date(year, month, 1);
-      const endDate = new Date(year, month + 1, 0);
-      
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
+        // API returns { success, data: { hearings: [...] } }
+        const hearings = Array.isArray((data as any)?.hearings)
+          ? ((data as any).hearings as CalendarHearing[])
+          : Array.isArray((data as any)?.data?.hearings)
+            ? ((data as any).data.hearings as CalendarHearing[])
+            : Array.isArray(data)
+              ? (data as CalendarHearing[])
+              : [];
 
-      const response = await caseService.getHearingsCalendar(startDateStr, endDateStr);
-      setHearings(response.data);
-    } catch (err) {
-      console.error('Error fetching hearings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setAllHearings(hearings);
 
-  const getDaysInMonth = (date: Date) => {
+        // If nothing selected yet, default to today and first hearing
+        if (!selectedDate) {
+          setSelectedDate(new Date());
+        }
+      } catch (err) {
+        console.error('Error fetching hearings:', err);
+        setAllHearings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllHearings();
+  }, []);
+
+  // Filter hearings to the visible month
+  const hearingsForMonth = useMemo(() => {
+    return allHearings.filter((h) => {
+      const d = new Date(h.hearing_date);
+      return d.getFullYear() === currentDate.getFullYear() && d.getMonth() === currentDate.getMonth();
+    });
+  }, [allHearings, currentDate]);
+
+  // Helper: days in month and starting weekday
+  const getMonthInfo = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    return { daysInMonth, startingDayOfWeek };
+    const first = new Date(year, month, 1);
+    const last = new Date(year, month + 1, 0);
+    return { daysInMonth: last.getDate(), startWeekday: first.getDay() };
   };
 
-  const getHearingsForDate = (date: Date) => {
-    return hearings.filter((hearing) => {
-      const hearingDate = new Date(hearing.hearing_date);
-      return (
-        hearingDate.getDate() === date.getDate() &&
-        hearingDate.getMonth() === date.getMonth() &&
-        hearingDate.getFullYear() === date.getFullYear()
-      );
+  const { daysInMonth, startWeekday } = getMonthInfo(currentDate);
+
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const blanks = Array.from({ length: startWeekday }, () => null);
+
+  const isToday = (d: Date) => {
+    const n = new Date();
+    return n.getFullYear() === d.getFullYear() && n.getMonth() === d.getMonth() && n.getDate() === d.getDate();
+  };
+
+  const getHearingsForDate = (d: Date) => {
+    return hearingsForMonth.filter((h) => {
+      const hd = new Date(h.hearing_date);
+      return hd.getFullYear() === d.getFullYear() && hd.getMonth() === d.getMonth() && hd.getDate() === d.getDate();
     });
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toUpperCase()) {
+  const getPriorityColor = (priority: string | undefined) => {
+    switch (priority?.toUpperCase()) {
       case 'HIGH':
         return 'bg-red-500';
       case 'MEDIUM':
@@ -71,54 +93,30 @@ export const CalendarPage = () => {
     }
   };
 
-  const getHearingTypeLabel = (type: string) => {
-    switch (type) {
-      case 'next_hearing':
-        return 'Next Hearing';
-      case 'first_hearing':
-        return 'First Hearing';
-      case 'last_hearing':
-        return 'Last Hearing';
-      default:
-        return type;
-    }
-  };
-
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-    setSelectedDate(null);
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-    setSelectedDate(null);
-  };
-
-  const today = () => {
-    setCurrentDate(new Date());
-    setSelectedDate(null);
-  };
-
-  const isToday = (date: Date) => {
-    const now = new Date();
-    return (
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    );
-  };
-
-  const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentDate);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const blanks = Array.from({ length: startingDayOfWeek }, (_, i) => i);
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const goToday = () => setCurrentDate(new Date());
 
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const selectedDayHearings = selectedDate ? getHearingsForDate(selectedDate) : [];
+  // Ensure a case is selected when date changes
+  useEffect(() => {
+    if (!selectedDate) return;
+    const todaysHearings = getHearingsForDate(selectedDate);
+    if (todaysHearings.length > 0) {
+      // If current selection not in today's hearings, pick the first
+      const stillValid = todaysHearings.some((h) => h.case_id === selectedCaseId);
+      if (!stillValid) {
+        setSelectedCaseId(todaysHearings[0].case_id);
+      }
+    } else {
+      setSelectedCaseId(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, allHearings]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -126,282 +124,135 @@ export const CalendarPage = () => {
               <Calendar className="w-8 h-8 text-blue-600" />
               Hearings Calendar
             </h1>
-            <p className="text-gray-600 mt-1">View and manage all scheduled hearings</p>
+            <p className="text-gray-600 mt-1">{loading ? 'Loading hearings...' : `${hearingsForMonth.length} hearings in ${currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}</p>
           </div>
+
           <div className="flex items-center gap-3">
-            <button
-              onClick={today}
-              className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-            >
-              Today
-            </button>
+            <button onClick={goToday} className="px-3 py-2 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium text-sm">Today</button>
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
-              <button
-                onClick={previousMonth}
-                className="p-2 hover:bg-white rounded-lg transition-colors"
-                title="Previous month"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <span className="px-4 py-2 text-sm font-semibold text-gray-900 min-w-[160px] text-center">
-                {monthName}
-              </span>
-              <button
-                onClick={nextMonth}
-                className="p-2 hover:bg-white rounded-lg transition-colors"
-                title="Next month"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
+              <button onClick={prevMonth} title="Previous month" className="p-2 hover:bg-white rounded"><ChevronLeft className="w-5 h-5 text-gray-600" /></button>
+              <div className="px-4 py-2 text-sm font-semibold text-gray-900 min-w-[160px] text-center">{monthName}</div>
+              <button onClick={nextMonth} title="Next month" className="p-2 hover:bg-white rounded"><ChevronRight className="w-5 h-5 text-gray-600" /></button>
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar Grid */}
-        <div className="lg:col-span-2">
+        {/* Left column: date info + hearings list + notes */}
+        <div className="lg:col-span-1 order-2 lg:order-1">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sticky top-6 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{selectedDate ? selectedDate.toLocaleDateString() : 'Select a date'}</h3>
+              <p className="text-sm text-gray-600">{selectedDate ? 'Hearings for selected date' : 'Click a date to view hearings'}</p>
+            </div>
+
+            {selectedDate ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {getHearingsForDate(selectedDate).map((h) => (
+                  <div
+                    key={h.id}
+                    className={`p-3 border rounded-lg transition-colors cursor-pointer ${
+                      selectedCaseId === h.case_id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setSelectedCaseId(h.case_id)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-500 font-medium">{h.case_number}</div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">{h.case_title || 'Untitled case'}</div>
+                      </div>
+                      <div className={`text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ${getPriorityColor(h.priority)} text-white`}>{h.priority || 'NA'}</div>
+                    </div>
+                    {h.court_name && (
+                      <div className="text-xs text-gray-600 mt-2 flex items-center gap-1">
+                        <Briefcase className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{h.court_name}</span>
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(h.hearing_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <button
+                      className="mt-2 text-xs text-blue-600 hover:underline"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/cases/${h.case_id}`); }}
+                    >
+                      View case details
+                    </button>
+                  </div>
+                ))}
+                {getHearingsForDate(selectedDate).length === 0 && (
+                  <div className="text-center py-6 text-gray-500">No hearings for this date</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">Click a date to view hearings</div>
+            )}
+
+            {/* Notes area */}
+            {selectedCaseId && selectedDate && (
+              <div className="pt-2 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">Case notes</h4>
+                <NotesPanel caseId={selectedCaseId} date={selectedDate.toISOString().split('T')[0]} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right column: calendar grid */}
+        <div className="lg:col-span-2 order-1 lg:order-2">
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p className="text-gray-600 mt-4">Loading hearings...</p>
+                <p className="text-gray-600 mt-4">Loading calendar...</p>
               </div>
             ) : (
-              <div>
-                {/* Day Headers */}
-                <div className="grid grid-cols-7 gap-2 mb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div
-                      key={day}
-                      className="text-center text-sm font-semibold text-gray-600 py-2"
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
+              <>
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                <div key={d} className="text-center text-sm font-semibold text-gray-600 py-2">{d}</div>
+              ))}
+            </div>
 
-                {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-2">
-                  {/* Empty cells for days before month starts */}
-                  {blanks.map((blank) => (
-                    <div key={`blank-${blank}`} className="aspect-square" />
-                  ))}
+            <div className="grid grid-cols-7 gap-2">
+              {blanks.map((_, idx) => <div key={`b-${idx}`} className="aspect-square" />)}
+              {days.map((day) => {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                const items = getHearingsForDate(date);
+                const todayFlag = isToday(date);
+                const selectedFlag = selectedDate && date.toDateString() === selectedDate.toDateString();
 
-                  {/* Days of the month */}
-                  {days.map((day) => {
-                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                    const dayHearings = getHearingsForDate(date);
-                    const isTodayDate = isToday(date);
-                    const isSelected = selectedDate?.toDateString() === date.toDateString();
-
-                    return (
-                      <div
-                        key={day}
-                        onClick={() => setSelectedDate(date)}
-                        className={`aspect-square p-2 border rounded-lg cursor-pointer transition-all ${
-                          isTodayDate
-                            ? 'border-blue-500 bg-blue-50'
-                            : isSelected
-                            ? 'border-blue-400 bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex flex-col h-full">
-                          <span
-                            className={`text-sm font-semibold ${
-                              isTodayDate ? 'text-blue-600' : 'text-gray-900'
-                            }`}
-                          >
-                            {day}
-                          </span>
-                          {dayHearings.length > 0 && (
-                            <div className="mt-1 space-y-1">
-                              {dayHearings.slice(0, 2).map((hearing) => (
-                                <div
-                                  key={hearing.id}
-                                  className={`w-full h-1 rounded-full ${getPriorityColor(
-                                    hearing.case_priority
-                                  )}`}
-                                  title={`${hearing.case_number} - ${hearing.case_title}`}
-                                />
-                              ))}
-                              {dayHearings.length > 2 && (
-                                <div className="text-xs text-gray-500 font-medium">
-                                  +{dayHearings.length - 2}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Hearing Details Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {selectedDate
-                ? selectedDate.toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'Select a date'}
-            </h3>
-
-            {selectedDate && selectedDayHearings.length > 0 ? (
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {selectedDayHearings.map((hearing) => (
+                return (
                   <div
-                    key={hearing.id}
-                    onClick={() => navigate(`/cases/${hearing.case_id}`)}
-                    className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    key={day}
+                    onClick={() => { setSelectedDate(date); }}
+                    className={`aspect-square p-2 border rounded-lg cursor-pointer transition-all ${
+                      selectedFlag ? 'border-blue-500 bg-blue-50' : todayFlag ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                    }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`w-2 h-2 rounded-full ${getPriorityColor(
-                              hearing.case_priority
-                            )}`}
-                          />
-                          <span className="text-xs font-semibold text-gray-500">
-                            {hearing.case_number}
-                          </span>
-                        </div>
-                        <h4 className="font-semibold text-gray-900 text-sm">
-                          {hearing.case_title}
-                        </h4>
-                      </div>
-                      <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-50 text-blue-700">
-                        {hearing.case_type}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-xs text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3" />
-                        <span>{getHearingTypeLabel(hearing.hearing_type)}</span>
-                      </div>
-
-                      {hearing.court_name && (
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="w-3 h-3" />
-                          <span className="truncate">{hearing.court_name}</span>
+                    <div className="flex flex-col h-full">
+                      <span className={`text-sm font-semibold ${selectedFlag ? 'text-blue-700' : todayFlag ? 'text-blue-600' : 'text-gray-900'}`}>{day}</span>
+                      {items.length > 0 && (
+                        <div className="mt-1 space-y-1">
+                          {items.slice(0, 2).map((it) => (
+                            <div key={it.id} className={`w-full h-1.5 rounded-full ${getPriorityColor(it.priority)}`} title={`${it.case_number} - ${it.case_title}`} />
+                          ))}
+                          {items.length > 2 && <div className="text-xs text-gray-500 font-medium">+{items.length - 2}</div>}
                         </div>
                       )}
-
-                      {hearing.court_hall_number && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-3 h-3" />
-                          <span>Hall {hearing.court_hall_number}</span>
-                        </div>
-                      )}
-
-                      {hearing.judge_name && (
-                        <div className="flex items-center gap-2">
-                          <User className="w-3 h-3" />
-                          <span>{hearing.judge_name}</span>
-                        </div>
-                      )}
-
-                      {hearing.client && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <div className="font-medium text-gray-700">Client</div>
-                          <div className="mt-1">{hearing.client.name}</div>
-                          {hearing.client.phone && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <Phone className="w-3 h-3" />
-                              <span>{hearing.client.phone}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <span className="text-xs text-blue-600 font-medium">
-                        Click to view case details →
-                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : selectedDate ? (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">No hearings</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  No hearings scheduled for this date
-                </p>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">Select a date</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Click on a date to view hearings
-                </p>
-              </div>
+                );
+              })}
+            </div>
+            </>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Summary */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Monthly Summary - {monthName}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Total Hearings</span>
-              <Calendar className="w-4 h-4 text-blue-600" />
-            </div>
-            <p className="text-2xl font-bold text-blue-600 mt-2">
-              {loading ? '...' : hearings.length}
-            </p>
-          </div>
-
-          <div className="bg-red-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">High Priority</span>
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-            </div>
-            <p className="text-2xl font-bold text-red-600 mt-2">
-              {loading ? '...' : hearings.filter(h => h.case_priority === 'HIGH').length}
-            </p>
-          </div>
-
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Medium Priority</span>
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            </div>
-            <p className="text-2xl font-bold text-yellow-600 mt-2">
-              {loading ? '...' : hearings.filter(h => h.case_priority === 'MEDIUM').length}
-            </p>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Low Priority</span>
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-            </div>
-            <p className="text-2xl font-bold text-green-600 mt-2">
-              {loading ? '...' : hearings.filter(h => h.case_priority === 'LOW').length}
-            </p>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default CalendarPage;

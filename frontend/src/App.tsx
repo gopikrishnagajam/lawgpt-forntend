@@ -7,8 +7,8 @@ import { ClientsPage } from './pages/ClientsPage';
 import { CasesPage } from './pages/CasesPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { CalendarPage } from './pages/CalendarPage';
-import { HearingsPage } from './pages/HearingsPage';
 import { TeamPage } from './pages/TeamPage';
+import { DiaryPage } from './pages/DiaryPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -37,9 +37,9 @@ function App() {
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/cases" element={<CasesPage />} />
               <Route path="/cases/:id" element={<CaseDetailPage />} />
-              <Route path="/hearings" element={<HearingsPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/hearings" element={<CalendarPage />} />
               <Route path="/team" element={<TeamPage />} />
+              <Route path="/diary" element={<DiaryPage />} />
             </Route>
           </Route>
 

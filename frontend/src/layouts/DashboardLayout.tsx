@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
-import { LogOut, Scale, User, FileText, Briefcase, Users, Shield, UserCircle, Calendar, Clock } from 'lucide-react';
+import { LogOut, User, FileText, Briefcase, Users, Shield, UserCircle, Calendar, BookOpen } from 'lucide-react';
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -100,15 +100,15 @@ export const DashboardLayout = () => {
               to="/hearings"
               className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
             >
-              <Clock className="w-4 h-4" />
-              Hearings
-            </Link>
-            <Link
-              to="/calendar"
-              className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
-            >
               <Calendar className="w-4 h-4" />
               Calendar
+            </Link>
+            <Link
+              to="/diary"
+              className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
+            >
+              <BookOpen className="w-4 h-4" />
+              Diary
             </Link>
             {isAdmin && (
               <Link

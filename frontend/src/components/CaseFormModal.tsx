@@ -34,6 +34,9 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
   const [caseType, setCaseType] = useState<CaseType>('CIVIL');
   const [subType, setSubType] = useState('');
   const [title, setTitle] = useState('');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [caseNumberType, setCaseNumberType] = useState('');
+  const [caseRegistrationDate, setCaseRegistrationDate] = useState('');
   const [filingDate, setFilingDate] = useState('');
   const [caseYear, setCaseYear] = useState('');
   
@@ -96,6 +99,11 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
   const [status, setStatus] = useState<CaseStatus>('ACTIVE');
   const [internalNotes, setInternalNotes] = useState('');
   const [tags, setTags] = useState('');
+  
+  // Disposition Info
+  const [currentStatus, setCurrentStatus] = useState('');
+  const [disposedOnDate, setDisposedOnDate] = useState('');
+  const [finalOrderSummary, setFinalOrderSummary] = useState('');
 
   // Fetch clients on mount
   useEffect(() => {
@@ -111,6 +119,83 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
       setDateOfFiling(filingDate);
     }
   }, [filingDate]);
+
+  // Populate form when editing a case
+  useEffect(() => {
+    if (caseToEdit && isOpen) {
+      setCaseType(caseToEdit.caseType);
+      setSubType(caseToEdit.caseSubType || '');
+      setTitle(caseToEdit.caseTitle);
+      setCaseNumber(caseToEdit.caseNumber || '');
+      setCaseNumberType(caseToEdit.caseNumberType || '');
+      setCaseRegistrationDate(caseToEdit.caseRegistrationDate || '');
+      setFilingDate(caseToEdit.filingDate || '');
+      setCaseYear(caseToEdit.caseYear?.toString() || '');
+
+      // Court Information
+      setCourtLevel(caseToEdit.courtLevel || '');
+      setCourtName(caseToEdit.courtName || '');
+      setState(caseToEdit.state || '');
+      setDistrict(caseToEdit.district || '');
+      setCourtComplex(caseToEdit.courtComplex || '');
+      setCourtHallNumber(caseToEdit.courtHallNumber || '');
+      setJudgeName(caseToEdit.judgeName || '');
+      setCaseStage(caseToEdit.caseStage || '');
+
+      // Party Information
+      if (caseToEdit.caseType === 'CIVIL' && caseToEdit.civilCaseDetails) {
+        setPlaintiffs(caseToEdit.civilCaseDetails.plaintiffs || [{
+          name: '',
+          address: { street: '', city: '', state: '', postal_code: '', country: '' },
+          phone: '',
+          email: '',
+          advocate_name: '',
+          advocate_bar_registration: ''
+        }]);
+        setDefendants(caseToEdit.civilCaseDetails.defendants || [{
+          name: '',
+          address: { street: '', city: '', state: '', postal_code: '', country: '' },
+          phone: '',
+          email: '',
+          advocate_name: '',
+          advocate_bar_registration: ''
+        }]);
+
+        // Case Details - Civil
+        setNatureOfSuit(caseToEdit.civilCaseDetails.nature_of_suit || '');
+        setReliefSought(caseToEdit.civilCaseDetails.relief_sought || '');
+        setClaimAmount(caseToEdit.civilCaseDetails.claim_amount?.toString() || '');
+        setSubjectMatter(caseToEdit.civilCaseDetails.subject_matter || '');
+        setBriefFacts(caseToEdit.civilCaseDetails.brief_facts || '');
+        setActsApplicable(caseToEdit.civilCaseDetails.acts_applicable?.join(', ') || '');
+      } else if (caseToEdit.caseType === 'CRIMINAL' && caseToEdit.criminalCaseDetails) {
+        // Case Details - Criminal
+        setFirNumber(caseToEdit.criminalCaseDetails.fir_number || '');
+        setPoliceStation(caseToEdit.criminalCaseDetails.police_station || '');
+        setFirDate(caseToEdit.criminalCaseDetails.fir_date || '');
+        setOffenseDetails(caseToEdit.criminalCaseDetails.offense_details || '');
+        setCustodyStatus(caseToEdit.criminalCaseDetails.custody_status || '');
+        setInvestigationOfficer(caseToEdit.criminalCaseDetails.investigation_officer || '');
+      }
+
+      // Important Dates
+      setDateOfFiling(caseToEdit.filingDate || '');
+      setFirstHearingDate(caseToEdit.firstHearingDate || '');
+      setNextHearingDate(caseToEdit.nextHearingDate || '');
+      setLastHearingDate(caseToEdit.lastHearingDate || '');
+
+      // Additional Information
+      setPriority(caseToEdit.casePriority);
+      setStatus(caseToEdit.caseStatus);
+      setInternalNotes(caseToEdit.internalNotes || '');
+      setTags(caseToEdit.tags?.join(', ') || '');
+
+      // Disposition Info
+      setCurrentStatus(caseToEdit.currentStatus || '');
+      setDisposedOnDate(caseToEdit.disposedOnDate || '');
+      setFinalOrderSummary(caseToEdit.finalOrderSummary || '');
+    }
+  }, [caseToEdit, isOpen]);
 
   const fetchClients = async () => {
     try {
@@ -195,6 +280,9 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
     setCaseType('CIVIL');
     setSubType('');
     setTitle('');
+    setCaseNumber('');
+    setCaseNumberType('');
+    setCaseRegistrationDate('');
     setFilingDate('');
     setCaseYear('');
     setCourtLevel('');
@@ -243,6 +331,9 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
     setStatus('ACTIVE');
     setInternalNotes('');
     setTags('');
+    setCurrentStatus('');
+    setDisposedOnDate('');
+    setFinalOrderSummary('');
     setError(null);
     setActiveTab('basic');
   };
@@ -260,10 +351,13 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
     try {
       const caseData: CreateCaseRequest = {
         case_type: caseType,
-        sub_type: subType || undefined,
         title,
-        filing_date: filingDate,
+        case_number: caseNumber,
+        case_number_type: caseNumberType || undefined,
+        case_registration_date: caseRegistrationDate || null,
         case_year: parseInt(caseYear),
+        sub_type: subType || undefined,
+        filing_date: filingDate || null,
         court_info: {
           court_level: courtLevel,
           court_name: courtName,
@@ -295,12 +389,8 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
           custody_status: custodyStatus || undefined,
           investigation_officer: investigationOfficer || undefined,
         },
-        assigned_client: assignedClientId ? {
-          client_id: assignedClientId as number,
-          client_type: clientType,
-        } : undefined,
         important_dates: {
-          date_of_filing: dateOfFiling || filingDate,
+          date_of_filing: dateOfFiling || filingDate || new Date().toISOString().split('T')[0],
           first_hearing_date: firstHearingDate || undefined,
           next_hearing_date: nextHearingDate || undefined,
           last_hearing_date: lastHearingDate || undefined,
@@ -311,6 +401,9 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
           internal_notes: internalNotes || undefined,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         },
+        current_status: currentStatus || undefined,
+        disposed_on_date: disposedOnDate || undefined,
+        final_order_summary: finalOrderSummary || undefined,
       };
 
       if (caseToEdit) {
@@ -455,6 +548,46 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g., ABC Pvt. Ltd. vs XYZ Enterprises"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Case Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={caseNumber}
+                      onChange={(e) => setCaseNumber(e.target.value)}
+                      placeholder="e.g., T.R.C. Nos. 123 and 150 of 2009"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Case Number Type
+                    </label>
+                    <input
+                      type="text"
+                      value={caseNumberType}
+                      onChange={(e) => setCaseNumberType(e.target.value)}
+                      placeholder="e.g., TRC, WP, CS"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Case Registration Date
+                    </label>
+                    <input
+                      type="date"
+                      value={caseRegistrationDate}
+                      onChange={(e) => setCaseRegistrationDate(e.target.value)}
+                      aria-label="Case Registration Date"
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -1271,6 +1404,45 @@ export const CaseFormModal = ({ isOpen, onClose, onSuccess, caseToEdit }: CaseFo
                       onChange={(e) => setInternalNotes(e.target.value)}
                       placeholder="e.g., Existing corporate client. Keep partner informed."
                       rows={5}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Status
+                    </label>
+                    <input
+                      type="text"
+                      value={currentStatus}
+                      onChange={(e) => setCurrentStatus(e.target.value)}
+                      placeholder="e.g., Disposed, Pending, Transferred"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Disposed On Date
+                    </label>
+                    <input
+                      type="date"
+                      value={disposedOnDate}
+                      onChange={(e) => setDisposedOnDate(e.target.value)}
+                      aria-label="Disposed On Date"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Final Order Summary
+                    </label>
+                    <textarea
+                      value={finalOrderSummary}
+                      onChange={(e) => setFinalOrderSummary(e.target.value)}
+                      placeholder="e.g., High Court held that generator sets were removed from Entry 38..."
+                      rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>

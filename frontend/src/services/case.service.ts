@@ -68,7 +68,7 @@ export const caseService = {
   /**
    * Get upcoming hearings
    */
-  getUpcomingHearings: async (days = 30): Promise<UpcomingHearingsResponse> => {
+  getUpcomingHearings: async (days = 7): Promise<UpcomingHearingsResponse> => {
     const { data } = await api.get<UpcomingHearingsResponse>(
       '/cases/hearings/upcoming',
       {
@@ -163,6 +163,19 @@ export const caseService = {
   },
 
   /**
+   * Get all hearings (flat list)
+   */
+  getAllHearings: async (groupByDate = false, limit = 100, offset = 0): Promise<import('@/types/case.types').CalendarHearingsResponse> => {
+    const { data } = await api.get<import('@/types/case.types').CalendarHearingsResponse>(
+      '/cases/hearings/all',
+      {
+        params: { groupByDate, limit, offset },
+      }
+    );
+    return data;
+  },
+
+  /**
    * Get hearings calendar for date range
    */
   getHearingsCalendar: async (
@@ -173,6 +186,32 @@ export const caseService = {
       '/cases/hearings/calendar',
       {
         params: { startDate, endDate },
+      }
+    );
+    return data;
+  },
+
+  /**
+   * Get calendar month view (grid) for a specific month (YYYY-MM)
+   */
+  getHearingsCalendarMonth: async (month: string): Promise<import('@/types/case.types').CalendarHearingsResponse> => {
+    const { data } = await api.get<import('@/types/case.types').CalendarHearingsResponse>(
+      '/cases/hearings/calendar-month',
+      {
+        params: { month },
+      }
+    );
+    return data;
+  },
+
+  /**
+   * Get all hearings for a specific date (day view)
+   */
+  getHearingsDay: async (date: string): Promise<import('@/types/case.types').CalendarHearingsResponse> => {
+    const { data } = await api.get<import('@/types/case.types').CalendarHearingsResponse>(
+      '/cases/hearings/day',
+      {
+        params: { date },
       }
     );
     return data;

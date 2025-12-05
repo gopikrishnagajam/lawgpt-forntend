@@ -7,7 +7,7 @@ import type { Case, CaseFilters, CaseType, CaseStatus, CasePriority } from '@/ty
 
 export const CasesPage = () => {
   const navigate = useNavigate();
-  const { sessionContext, user } = useAuthStore();
+  const { sessionContext } = useAuthStore();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

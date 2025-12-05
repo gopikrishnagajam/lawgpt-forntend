@@ -78,12 +78,17 @@ export interface Case {
   caseTitle: string;
   caseType: CaseType;
   caseSubType?: string;
-  filingDate: string;
+  caseNumberType?: string; // e.g., 'TRC', 'WP', 'CS'
+  caseRegistrationDate?: string;
+  filingDate?: string;
   caseYear: number;
   caseStage?: string;
   caseStatus: CaseStatus;
   casePriority: CasePriority;
   clientType?: ClientType;
+  currentStatus?: string; // e.g., 'Disposed', 'Pending'
+  disposedOnDate?: string;
+  finalOrderSummary?: string;
   
   // Court info (flattened from backend)
   courtLevel?: string;
@@ -160,33 +165,46 @@ export interface CaseDocument {
 
 export interface CreateCaseRequest {
   case_type: CaseType;
-  sub_type?: string;
   title: string;
-  filing_date: string;
+  case_number: string;
+  case_number_type?: string; // e.g., 'TRC', 'WP', 'CS'
+  case_registration_date?: string | null;
   case_year: number;
+  sub_type?: string;
+  filing_date?: string | null;
   court_info: CourtInfo;
   party_info: {
     plaintiffs?: PartyInfo[];
     defendants?: PartyInfo[];
   };
   case_details: CaseDetails;
-  assigned_client?: AssignedClient;
   important_dates: ImportantDates;
   additional_info: AdditionalInfo;
+  current_status?: string; // e.g., 'Disposed', 'Pending'
+  disposed_on_date?: string; // Format: YYYY-MM-DD
+  final_order_summary?: string;
+  client_id?: number;
 }
 
 export interface UpdateCaseRequest {
-  sub_type?: string;
   title?: string;
+  case_number?: string;
+  case_number_type?: string;
+  case_registration_date?: string | null;
+  case_year?: number;
+  sub_type?: string;
+  filing_date?: string | null;
   court_info?: Partial<CourtInfo>;
   party_info?: {
     plaintiffs?: PartyInfo[];
     defendants?: PartyInfo[];
   };
   case_details?: Partial<CaseDetails>;
-  assigned_client?: AssignedClient;
   important_dates?: Partial<ImportantDates>;
   additional_info?: Partial<AdditionalInfo>;
+  current_status?: string;
+  disposed_on_date?: string;
+  final_order_summary?: string;
 }
 
 export interface CaseFilters {
@@ -280,9 +298,14 @@ export interface CalendarHearing {
   case_number: string;
   case_title: string;
   case_type: CaseType;
-  case_priority: CasePriority;
+  priority?: CasePriority; // From API response
+  case_priority?: CasePriority; // Legacy support
   hearing_type: 'next_hearing' | 'first_hearing' | 'last_hearing';
   hearing_date: string;
+  hearing_date_only?: string; // YYYY-MM-DD format
+  status?: 'upcoming' | 'past';
+  days_until?: number;
+  days_ago?: number;
   court_name?: string;
   court_hall_number?: string;
   judge_name?: string;
@@ -291,6 +314,8 @@ export interface CalendarHearing {
     name: string;
     phone?: string;
   };
+  outcome?: string;
+  notes?: string;
 }
 
 export interface CalendarHearingsResponse {
@@ -342,4 +367,60 @@ export interface GetCasesByOrgMemberResponse {
     offset: number;
     hasMore: boolean;
   };
+}
+
+// Notes Types
+export interface User {
+  id: number;
+  fullName: string;
+  email: string;
+}
+
+export interface CaseInfo {
+  id: number;
+  caseNumber: string;
+  caseTitle: string;
+}
+
+export interface Note {
+  id: string;
+  caseId: number;
+  userId: number;
+  date: string;
+  content: string;
+  user: User;
+  case?: CaseInfo;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteRequest {
+  content: string;
+  date: string;
+}
+
+export interface UpdateNoteRequest {
+  content: string;
+  date?: string;
+}
+
+export interface NotesResponse {
+  success: boolean;
+  data: Note[];
+}
+
+export interface SingleNoteResponse {
+  success: boolean;
+  data: Note;
+}
+
+export interface NoteResponse {
+  success: boolean;
+  message: string;
+  data: Note;
+}
+
+export interface DeleteNoteResponse {
+  success: boolean;
+  message: string;
 }

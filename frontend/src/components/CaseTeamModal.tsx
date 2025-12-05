@@ -52,6 +52,9 @@ export const CaseTeamModal = ({ isOpen, onClose, caseId, onSuccess }: CaseTeamMo
     }
   };
 
+  // Fetch members when modal opens. fetchTeamMembers & fetchOrganizationMembers
+  // are stable enough here; disable exhaustive-deps warning to avoid re-running unnecessarily.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen) {
       fetchTeamMembers();
@@ -133,6 +136,8 @@ export const CaseTeamModal = ({ isOpen, onClose, caseId, onSuccess }: CaseTeamMo
             <h4 className="text-sm font-semibold text-gray-900 mb-3">Add Team Member</h4>
             <div className="flex gap-2">
               <select
+                aria-label="Select organization member to add"
+                title="Select organization member to add"
                 value={selectedUserId || ''}
                 onChange={(e) => setSelectedUserId(e.target.value ? parseInt(e.target.value) : null)}
                 disabled={isAdding || availableMembers.length === 0}
