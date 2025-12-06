@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  lawgpt-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lawgpt-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - lawgpt-network
+
+networks:
+  lawgpt-network:
+    driver: bridge
