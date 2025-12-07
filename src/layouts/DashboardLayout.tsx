@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
-import { LogOut, User, FileText, Briefcase, Users, Shield, UserCircle, Calendar, BookOpen } from 'lucide-react';
+import { LogOut, User, FileText, Briefcase, Users, Shield, UserCircle, Calendar, BookOpen, MessageSquare } from 'lucide-react';
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -110,6 +110,15 @@ export const DashboardLayout = () => {
               <BookOpen className="w-4 h-4" />
               Diary
             </Link>
+            {!isOrganization && (
+              <Link
+                to="/forums"
+                className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Forums
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/team"
@@ -117,6 +126,15 @@ export const DashboardLayout = () => {
               >
                 <Shield className="w-4 h-4" />
                 Team
+              </Link>
+            )}
+            {isOrganization && (
+              <Link
+                to="/forums"
+                className="flex items-center gap-2 px-4 py-4 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-t-lg border-b-2 border-transparent hover:border-blue-600 transition-all duration-200"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Forums
               </Link>
             )}
           </div>

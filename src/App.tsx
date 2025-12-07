@@ -9,6 +9,9 @@ import { CaseDetailPage } from './pages/CaseDetailPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { TeamPage } from './pages/TeamPage';
 import { DiaryPage } from './pages/DiaryPage';
+import { ForumsPage } from './pages/ForumsPage';
+import { ForumThreadsPage } from './pages/ForumThreadsPage';
+import { ThreadDetailPage } from './pages/ThreadDetailPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -40,6 +43,9 @@ function App() {
               <Route path="/hearings" element={<CalendarPage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/diary" element={<DiaryPage />} />
+              <Route path="/forums" element={<ForumsPage />} />
+              <Route path="/forums/:forumId/threads" element={<ForumThreadsPage />} />
+              <Route path="/forums/:forumId/threads/:threadId" element={<ThreadDetailPage />} />
             </Route>
           </Route>
 

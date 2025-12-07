@@ -14,7 +14,6 @@ import {
   Eye,
   Settings,
 } from 'lucide-react';
-import type { ForumCategory } from '@/types/forum.types';
 import { CreateThreadModal } from '@/components/CreateThreadModal';
 import { CategoryManagementModal } from '@/components/CategoryManagementModal';
 

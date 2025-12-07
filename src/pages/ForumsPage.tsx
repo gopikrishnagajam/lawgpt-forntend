@@ -11,7 +11,6 @@ export const ForumsPage = () => {
   const navigate = useNavigate();
   const { user, sessionContext } = useAuthStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedForum, setSelectedForum] = useState<Forum | null>(null);
 
   const isAdmin = sessionContext?.roles.includes('admin');
   const loginType = sessionContext?.loginType;
